@@ -33,40 +33,72 @@ class Chatbot extends Component {
         }
     }
 
-    async df_text_query (queryText) {
+    async df_text_query (text) {
         let says = {
             speaks: 'user',
             msg: {
                 text : {
-                    text: queryText
+                    text: text
                 }
             }
         }
         this.setState({ messages: [...this.state.messages, says]});
-        const res = await axios.post('/api/df_text_query',  {text: queryText, userID: cookies.get('userID')});
+        try {
+            const res = await axios.post('/api/df_text_query',  {text, userID: cookies.get('userID')});
 
-        for (let msg of res.data.fulfillmentMessages) {
+            for (let msg of res.data.fulfillmentMessages) {
+                says = {
+                    speaks: 'bot',
+                    msg: msg
+                }
+                this.setState({ messages: [...this.state.messages, says]});
+            }
+        } catch (e) {
             says = {
                 speaks: 'bot',
-                msg: msg
+                msg: {
+                    text : {
+                        text: "I'm having troubles. I need to terminate. will be back later"
+                    }
+                }
             }
             this.setState({ messages: [...this.state.messages, says]});
+            let that = this;
+            setTimeout(function(){
+                that.setState({ showBot: false})
+            }, 2000);
         }
     };
 
 
-    async df_event_query(eventName) {
+    async df_event_query(event) {
+        try {
+            const res = await axios.post('/api/df_event_query',  {event, userID: cookies.get('userID')});
 
-        const res = await axios.post('/api/df_event_query',  {event: eventName, userID: cookies.get('userID')});
+            for (let msg of res.data.fulfillmentMessages) {
+                let says = {
+                    speaks: 'bot',
+                    msg: msg
+                }
 
-        for (let msg of res.data.fulfillmentMessages) {
+                this.setState({ messages: [...this.state.messages, says]});
+            }
+        } catch (e) {
             let says = {
                 speaks: 'bot',
-                msg: msg
+                msg: {
+                    text : {
+                        text: "I'm having troubles. I need to terminate. will be back later"
+                    }
+                }
             }
-
             this.setState({ messages: [...this.state.messages, says]});
+            let that = this;
+            setTimeout(function(){
+                that.setState({ showBot: false})
+            }, 2000);
         }
+
     };
 
     resolveAfterXSeconds(x) {
@@ -81,7 +113,7 @@ class Chatbot extends Component {
         this.df_event_query('Welcome');
 
         if (window.location.pathname === '/shop' && !this.state.shopWelcomeSent) {
-            await this.resolveAfterXSeconds(2);
+            await this.resolveAfterXSeconds(1);
             this.df_event_query('WELCOME_SHOP');
             this.setState({ shopWelcomeSent: true, showBot: true });
         }
@@ -110,7 +142,7 @@ class Chatbot extends Component {
     hide(event) {
         event.preventDefault();
         event.stopPropagation();
-        this.setState({showBot: false});
+        this.setState({showBot: true});
     }
 
     _handleQuickReplyPayload(event, payload, text) {
@@ -189,7 +221,7 @@ class Chatbot extends Component {
     render() {
         if (this.state.showBot) {
             return (
-                <div style={{ minHeight: 500, maxHeight: 500, width:400, position: 'absolute', bottom: 0, right: 0, border: '1px solid lightgray'}}>
+                <div style={{ minHeight: 500, maxHeight: 470, width:400, position: 'absolute', bottom: 0, right: 0, border: '1px solid lightgray'}}>
                     <nav>
                         <div className="nav-wrapper">
                             <a href="/" className="brand-logo">ChatBot</a>
